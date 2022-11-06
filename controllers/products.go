@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"errors"
 	"fmt"
 	"github.com/Arnobkumarsaha/new-server/errorhandler"
 	"github.com/Arnobkumarsaha/new-server/resreq"
@@ -17,90 +18,74 @@ and we need these to use render.Render() & render.RenderList() functions.
 */
 
 func (rs *ControllerProductResource) GetAllProducts(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
-	fmt.Println("Products (GetAllProducts)= ", schemas.Products)
-	tmp := resreq.NewProductListResponse(schemas.Products)
-	fmt.Println("tmp = ", tmp)
-	if err := render.RenderList(w, r, tmp); err != nil {
-		render.Render(w, r, errorhandler.ErrRender(err))
+	setDefaultHeader(w)
+	prods := resreq.NewProductListResponse(schemas.Products)
+	if err := render.RenderList(w, r, prods); err != nil {
+		_ = render.Render(w, r, errorhandler.ErrRender(err))
 		return
 	}
-	w.WriteHeader(http.StatusOK)
 }
 
 func (rs *ControllerProductResource) GetSingleProduct(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
-	id := r.Context().Value("prod_id").(string)
+	setDefaultHeader(w)
+	id := getIDFromRequest(r)
 
 	for _, p := range schemas.Products {
 		if isEqual(id, p.Id) {
-			tmp := resreq.NewProductResponse(p)
-			fmt.Println("Found ! ", p, tmp)
-			rdObj := render.Renderer(tmp)
-
-			if err := render.Render(w, r, rdObj); err != nil {
-				render.Render(w, r, errorhandler.ErrRender(err))
+			prod := resreq.NewProductResponse(p)
+			if err := render.Render(w, r, prod); err != nil {
+				_ = render.Render(w, r, errorhandler.ErrRender(err))
 				return
 			}
 			return
 		}
 	}
-	w.WriteHeader(http.StatusBadRequest)
-	w.Write([]byte("No products found with id = " + id))
+	err := errors.New(fmt.Sprintf("no products found with ID = %v", id))
+	_ = render.Render(w, r, errorhandler.ErrNotFound(err))
 }
 
 func (rs *ControllerProductResource) CreateProduct(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
+	setDefaultHeader(w)
 	newProduct := rs.ParseProductFromRequestBody(w, r)
-
-	fmt.Println(newProduct)
-
 	schemas.Products = append(schemas.Products, &newProduct)
-	fmt.Println("After appending : ", schemas.Products)
-
-	w.WriteHeader(http.StatusOK)
-	w.Write([]byte("added !! "))
+	errorhandler.Write(w, fmt.Sprintf("%v added !", newProduct))
 }
 
 func (rs *ControllerProductResource) UpdateProduct(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
+	setDefaultHeader(w)
 	updatedProduct := rs.ParseProductFromRequestBody(w, r)
-
-	id := r.Context().Value("prod_id").(string)
-	fmt.Println("id in UpdateProduct() = ", id)
+	id := getIDFromRequest(r)
 
 	if !isEqual(updatedProduct.Id, id) {
-		w.WriteHeader(http.StatusBadRequest)
-		w.Write([]byte("Id can not be changed when updating.."))
+		err := errors.New(fmt.Sprintf("Id can not be changed when updating."))
+		_ = render.Render(w, r, errorhandler.ErrInvalidRequest(err))
 		return
 	}
 
 	for idx, p := range schemas.Products {
 		if isEqual(id, p.Id) {
 			schemas.Products[idx] = &updatedProduct
-			w.WriteHeader(http.StatusOK)
-			w.Write([]byte("Product updated. \n"))
+			errorhandler.Write(w, "product updated")
 			return
 		}
 	}
 
-	w.WriteHeader(http.StatusBadRequest)
-	w.Write([]byte("No products found with id = " + id))
+	err := errors.New(fmt.Sprintf("no products found with ID = %v", id))
+	_ = render.Render(w, r, errorhandler.ErrNotFound(err))
 }
 
 func (rs *ControllerProductResource) DeleteProduct(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
-	id := r.Context().Value("prod_id").(string)
-	fmt.Println("id in DeleteProduct() = ", id)
+	setDefaultHeader(w)
+	id := getIDFromRequest(r)
 
 	for idx, p := range schemas.Products {
 		if isEqual(id, p.Id) {
 			// Deleting this indexed product
 			schemas.Products = append(schemas.Products[:idx], schemas.Products[idx+1:]...)
-			fmt.Println("After Deleting : ", schemas.Products)
+			errorhandler.Write(w, "product deleted")
 			return
 		}
 	}
-	fmt.Println("No product found with product_id = ", id)
-	return
+	err := errors.New(fmt.Sprintf("no products found with ID = %v", id))
+	_ = render.Render(w, r, errorhandler.ErrNotFound(err))
 }

@@ -1,7 +1,6 @@
 package resreq
 
 import (
-	"fmt"
 	"github.com/Arnobkumarsaha/new-server/schemas"
 	"github.com/go-chi/render"
 	"net/http"
@@ -12,16 +11,20 @@ type ProductResponse struct {
 	User *schemas.User `json:"user,omitempty"`
 }
 
+var _ render.Renderer = &ProductResponse{}
+
 func (rd *ProductResponse) Render(w http.ResponseWriter, r *http.Request) error {
-	// Pre-processing before a response is marshalled and sent across the wire
 	w.Write([]byte("ProductResponse Render() method is called."))
 	return nil
 }
 
-func NewProductResponse(product *schemas.Product) *ProductResponse {
+// We are type casting our Product to render.Renderer interface,
+// to call render.Render() or render.RenderList() method with appropriate parameter.
+
+func NewProductResponse(product *schemas.Product) render.Renderer {
 	resp := &ProductResponse{Product: product}
 	if resp.User == nil {
-		if user, _ := dbGetUser(resp.OwnerId); user != nil {
+		if user, _ := getUserByID(resp.OwnerId); user != nil {
 			resp.User = user
 		}
 	}
@@ -29,11 +32,10 @@ func NewProductResponse(product *schemas.Product) *ProductResponse {
 }
 
 func NewProductListResponse(products []*schemas.Product) []render.Renderer {
-	list := []render.Renderer{}
+	var list []render.Renderer
 	for _, article := range products {
 		list = append(list, NewProductResponse(article))
 	}
-	fmt.Println("In NewArticleListResponse done.")
 	return list
 }
 

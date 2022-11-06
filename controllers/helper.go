@@ -1,8 +1,33 @@
 package controllers
 
-import "strconv"
+import (
+	"encoding/json"
+	"github.com/Arnobkumarsaha/new-server/errorhandler"
+	"github.com/Arnobkumarsaha/new-server/schemas"
+	"github.com/go-chi/render"
+	"net/http"
+	"strconv"
+)
 
-func isEqual(a interface{},b interface{}) bool{
+func (rs *ControllerProductResource) ParseProductFromRequestBody(w http.ResponseWriter, r *http.Request) schemas.Product {
+	var newProduct schemas.Product
+	err := json.NewDecoder(r.Body).Decode(&newProduct)
+	if err != nil {
+		_ = render.Render(w, r, errorhandler.ErrInvalidRequest(err))
+	}
+	return newProduct
+}
+
+func setDefaultHeader(w http.ResponseWriter) {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+}
+
+func getIDFromRequest(r *http.Request) string {
+	return r.Context().Value("prod_id").(string)
+}
+
+func isEqual(a interface{}, b interface{}) bool {
 	var A, B []byte
 
 	switch u := a.(type) {
@@ -11,7 +36,7 @@ func isEqual(a interface{},b interface{}) bool{
 	case string:
 		A = []byte(u)
 	case int64:
-		A = []byte(strconv.FormatInt(int64(u),10))
+		A = []byte(strconv.FormatInt(int64(u), 10))
 	}
 
 	switch u := b.(type) {
@@ -20,14 +45,14 @@ func isEqual(a interface{},b interface{}) bool{
 	case string:
 		B = []byte(u)
 	case int64:
-		B = []byte(strconv.FormatInt(int64(u),10))
+		B = []byte(strconv.FormatInt(int64(u), 10))
 	}
 
-	for len(A) != len(B){
+	for len(A) != len(B) {
 		return false
 	}
-	for i,j := range A{
-		if B[i] != j{
+	for i, j := range A {
+		if B[i] != j {
 			return false
 		}
 	}
