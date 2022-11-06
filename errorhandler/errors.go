@@ -47,6 +47,7 @@ func ErrNotFound(err error) render.Renderer {
 	}
 }
 
+// Write will be called in case of no error
 func Write(w http.ResponseWriter, s string) {
 	_, err := w.Write([]byte(s))
 	if err != nil {

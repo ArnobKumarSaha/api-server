@@ -10,13 +10,6 @@ import (
 	"net/http"
 )
 
-/*
-resreq.NewProductResponse has a Render() method,
-also errorhandler.ErrRender() gives a errResponse, which has a Render() method
-
-and we need these to use render.Render() & render.RenderList() functions.
-*/
-
 func (rs *ControllerProductResource) GetAllProducts(w http.ResponseWriter, r *http.Request) {
 	setDefaultHeader(w)
 	prods := resreq.NewProductListResponse(schemas.Products)
@@ -28,10 +21,10 @@ func (rs *ControllerProductResource) GetAllProducts(w http.ResponseWriter, r *ht
 
 func (rs *ControllerProductResource) GetSingleProduct(w http.ResponseWriter, r *http.Request) {
 	setDefaultHeader(w)
-	id := getIDFromRequest(r)
+	id := getIDFromRequestContext(r)
 
 	for _, p := range schemas.Products {
-		if isEqual(id, p.Id) {
+		if isEqual(id, p.ID) {
 			prod := resreq.NewProductResponse(p)
 			if err := render.Render(w, r, prod); err != nil {
 				_ = render.Render(w, r, errorhandler.ErrRender(err))
@@ -54,16 +47,16 @@ func (rs *ControllerProductResource) CreateProduct(w http.ResponseWriter, r *htt
 func (rs *ControllerProductResource) UpdateProduct(w http.ResponseWriter, r *http.Request) {
 	setDefaultHeader(w)
 	updatedProduct := rs.ParseProductFromRequestBody(w, r)
-	id := getIDFromRequest(r)
+	id := getIDFromRequestContext(r)
 
-	if !isEqual(updatedProduct.Id, id) {
-		err := errors.New(fmt.Sprintf("Id can not be changed when updating."))
+	if !isEqual(updatedProduct.ID, id) {
+		err := errors.New(fmt.Sprintf("ID can not be changed when updating."))
 		_ = render.Render(w, r, errorhandler.ErrInvalidRequest(err))
 		return
 	}
 
 	for idx, p := range schemas.Products {
-		if isEqual(id, p.Id) {
+		if isEqual(id, p.ID) {
 			schemas.Products[idx] = &updatedProduct
 			errorhandler.Write(w, "product updated")
 			return
@@ -76,11 +69,10 @@ func (rs *ControllerProductResource) UpdateProduct(w http.ResponseWriter, r *htt
 
 func (rs *ControllerProductResource) DeleteProduct(w http.ResponseWriter, r *http.Request) {
 	setDefaultHeader(w)
-	id := getIDFromRequest(r)
+	id := getIDFromRequestContext(r)
 
 	for idx, p := range schemas.Products {
-		if isEqual(id, p.Id) {
-			// Deleting this indexed product
+		if isEqual(id, p.ID) {
 			schemas.Products = append(schemas.Products[:idx], schemas.Products[idx+1:]...)
 			errorhandler.Write(w, "product deleted")
 			return

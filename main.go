@@ -18,10 +18,9 @@ func main() {
 	r := chi.NewRouter()
 	r.Use(middleware.Logger)
 
-	//r.Get("/pp", check)
-
 	r.Post("/signin", auth.SignIn)
 	r.Get("/welcome", auth.Welcome)
+	r.Post("/refresh", auth.Refresh)
 	r.Post("/logout", auth.LogOut)
 
 	/*
@@ -31,7 +30,7 @@ func main() {
 	*/
 	r.Mount("/products", (&controllers.ControllerProductResource{}).Routes())
 
-	r.Get("/", func(w http.ResponseWriter, r *http.Request) {
+	r.Get("/", func(w http.ResponseWriter, r *http.Request) { // Dummy, Default
 		w.Write([]byte("Hello World!"))
 	})
 

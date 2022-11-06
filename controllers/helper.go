@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"encoding/json"
+	"fmt"
 	"github.com/Arnobkumarsaha/new-server/errorhandler"
 	"github.com/Arnobkumarsaha/new-server/schemas"
 	"github.com/go-chi/render"
@@ -15,6 +16,10 @@ func (rs *ControllerProductResource) ParseProductFromRequestBody(w http.Response
 	if err != nil {
 		_ = render.Render(w, r, errorhandler.ErrInvalidRequest(err))
 	}
+	if newProduct.ID == nil { // ID not given
+		err = fmt.Errorf("ID field is needed")
+		_ = render.Render(w, r, errorhandler.ErrInvalidRequest(err))
+	}
 	return newProduct
 }
 
@@ -23,7 +28,7 @@ func setDefaultHeader(w http.ResponseWriter) {
 	w.WriteHeader(http.StatusOK)
 }
 
-func getIDFromRequest(r *http.Request) string {
+func getIDFromRequestContext(r *http.Request) string {
 	return r.Context().Value("prod_id").(string)
 }
 
@@ -36,7 +41,9 @@ func isEqual(a interface{}, b interface{}) bool {
 	case string:
 		A = []byte(u)
 	case int64:
-		A = []byte(strconv.FormatInt(int64(u), 10))
+		A = []byte(strconv.FormatInt(u, 10))
+	case *int64:
+		A = []byte(strconv.FormatInt(*u, 10))
 	}
 
 	switch u := b.(type) {
@@ -45,7 +52,9 @@ func isEqual(a interface{}, b interface{}) bool {
 	case string:
 		B = []byte(u)
 	case int64:
-		B = []byte(strconv.FormatInt(int64(u), 10))
+		B = []byte(strconv.FormatInt(u, 10))
+	case *int64:
+		B = []byte(strconv.FormatInt(*u, 10))
 	}
 
 	for len(A) != len(B) {

@@ -23,9 +23,12 @@ func (a *ProductRequest) Bind(r *http.Request) error {
 	return nil
 }
 
-func getUserByID(id int64) (*schemas.User, error) {
+func getUserByID(ownerID *int64) (*schemas.User, error) {
+	if ownerID == nil {
+		return nil, errors.New("ownerID is not set in the product")
+	}
 	for _, u := range schemas.Users {
-		if u.Id == id {
+		if u.ID == ownerID {
 			return u, nil
 		}
 	}

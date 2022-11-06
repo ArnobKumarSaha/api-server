@@ -13,8 +13,18 @@ type ProductResponse struct {
 
 var _ render.Renderer = &ProductResponse{}
 
+/*
+ABOUT RENDERING (call stack):
+render.RenderList & render.Render calls renderer() & Respond().
+renderer() calls Render() (not render.render(), but the Render() method of the structure.)
+
+Respond() calls DefaultResponder(), then DefaultResponder() call JSON().
+and JSON() actually writes, what We see in the responses.
+*/
+
 func (rd *ProductResponse) Render(w http.ResponseWriter, r *http.Request) error {
-	w.Write([]byte("ProductResponse Render() method is called."))
+	// It will be called, each time render.renderer() is called.
+	// so, multiple times in case of RenderList
 	return nil
 }
 
@@ -24,7 +34,7 @@ func (rd *ProductResponse) Render(w http.ResponseWriter, r *http.Request) error 
 func NewProductResponse(product *schemas.Product) render.Renderer {
 	resp := &ProductResponse{Product: product}
 	if resp.User == nil {
-		if user, _ := getUserByID(resp.OwnerId); user != nil {
+		if user, _ := getUserByID(resp.OwnerID); user != nil {
 			resp.User = user
 		}
 	}
@@ -38,12 +48,3 @@ func NewProductListResponse(products []*schemas.Product) []render.Renderer {
 	}
 	return list
 }
-
-/*
-ABOUT RENDERING (call stack):
-render.RenderList & render.Render calls renderer() & Respond().
-renderer() calls Render() (not render.render(), but the Render() method of the structure.)
-
-Respond() calls DefaultResponder(), then DefaultResponder() call JSON().
-and JSON() actually writes, what We see in the responses.
-*/

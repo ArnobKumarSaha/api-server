@@ -42,6 +42,7 @@ func Welcome(w http.ResponseWriter, r *http.Request) {
 	errorhandler.Write(w, fmt.Sprintf("Welcome %s!", claims.Username))
 }
 
+// Refresh will increase the expiration time of the token by 5 Minutes.
 func Refresh(w http.ResponseWriter, r *http.Request) {
 	tknStr, err := getToken(w, r)
 	if err != nil {
@@ -54,14 +55,15 @@ func Refresh(w http.ResponseWriter, r *http.Request) {
 
 	// We ensure that a new token is not issued until enough time has elapsed
 	// In this case, a new token will only be issued if the old token is within
-	// 2 Minute of expiry. Otherwise, return a bad request status
-	if time.Unix(claims.ExpiresAt, 0).Sub(time.Now()) > 2*time.Minute {
+	// 10 Minute of expiry. Otherwise, return a bad request status
+	timeToLive := time.Unix(claims.ExpiresAt, 0).Sub(time.Now())
+	if timeToLive > 10*time.Minute {
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
 
 	// Now, create a new token for the current use, with a renewed expiration time
-	expirationTime := time.Now().Add(5 * time.Minute)
+	expirationTime := time.Now().Add(5*time.Minute + timeToLive)
 	signedTokenString, err := getSignedTokenString(w, claims.Username, expirationTime)
 	if err != nil {
 		return
